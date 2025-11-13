@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CampusCart - Campus Food Delivery</title>
+    <link rel="stylesheet" href="styles/main.css">
+    <link rel="stylesheet" href="styles/auth.css">
+    <link rel="stylesheet" href="styles/customer.css">
+    <link rel="stylesheet" href="styles/vendor.css">
+</head>
+<body>
+    <header id="header" class="hidden">
+        <div class="container header-container">
+            <a href="#" class="logo" id="home-link">CampusCart</a>
+            <div class="nav-links" id="nav-links">
+                <a href="#" id="orders-link">My Orders</a>
+                <a href="#" id="profile-link">Profile</a>
+            </div>
+            <div class="user-info" id="user-info">
+                <div class="user-avatar" id="user-avatar">U</div>
+                <span id="user-name">User</span>
+                <button class="btn btn-outline" id="logout-btn">Logout</button>
+            </div>
+        </div>
+    </header>
+
+    <!-- Login Page -->
+    <div id="login-page" class="container login-container">
+        <div class="login-card card">
+            <h2>Welcome to CampusCart</h2>
+            <p style="text-align: center; color: var(--gray); margin-bottom: 20px;">Campus Food Delivery with Smart Inventory</p>
+            <div class="login-tabs">
+                <div class="login-tab active" data-role="student">Student Login</div>
+                <div class="login-tab" data-role="vendor">Vendor Login</div>
+            </div>
+            <form id="login-form">
+                <div class="form-group">
+                    <label for="email">Email</label>
+                    <input type="email" id="email" class="form-control" required>
+                </div>
+                <div class="form-group">
+                    <label for="password">Password</label>
+                    <input type="password" id="password" class="form-control" required>
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%;">Login</button>
+            </form>
+            <div class="demo-accounts">
+                <p><strong>📚 Demo Accounts:</strong></p>
+                <p><strong>Student:</strong> student@campus.edu / password123</p>
+                <p><strong>Vendor Accounts (Each owns 1 restaurant):</strong></p>
+                <p>• Spicy Hut: spicyhut@campus.edu / password123</p>
+                <p>• Dev D Restro: devdrestro@campus.edu / password123</p>
+                <p>• Campus Cafe: campusafe@campus.edu / password123</p>
+                <p>• Nescafe Corner: nescafe@campus.edu / password123</p>
+                <p>• Let Me Bake: letmebake@campus.edu / password123</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Customer Dashboard -->
+    <div id="customer-dashboard" class="container hidden">
+        <div class="search-container">
+            <input type="text" class="search-box" id="restaurant-search" placeholder="🔍 Search for restaurants or food items...">
+        </div>
+        <h2>Restaurants on Campus</h2>
+        <div class="restaurant-grid" id="restaurant-grid">
+            <!-- Restaurants loaded dynamically -->
+        </div>
+    </div>
+
+    <!-- Restaurant Menu Page -->
+    <div id="restaurant-menu" class="container hidden">
+        <div class="menu-header">
+            <button class="btn btn-outline" id="back-to-restaurants">← Back to Restaurants</button>
+            <h2 id="restaurant-name">Restaurant Name</h2>
+        </div>
+        <div class="menu-container" id="menu-container">
+            <!-- Menu loaded dynamically -->
+        </div>
+        <div class="cart-fab">
+            <button class="btn btn-primary" id="view-cart-btn">🛒 View Cart (<span id="cart-count">0</span>)</button>
+        </div>
+    </div>
+
+    <!-- Shopping Cart -->
+    <div class="cart-sidebar" id="cart-sidebar">
+        <div class="cart-header">
+            <h3>Your Cart</h3>
+            <button class="btn btn-outline" id="close-cart">✕</button>
+        </div>
+        <div class="cart-items" id="cart-items">
+            <!-- Cart items loaded dynamically -->
+        </div>
+        <div class="cart-total">
+            <span>Total:</span>
+            <span id="cart-total">₹0</span>
+        </div>
+        <div class="cart-actions">
+            <button class="btn btn-primary" id="checkout-btn" style="width: 100%;">Place Order</button>
+        </div>
+    </div>
+    <div class="overlay" id="cart-overlay"></div>
+
+    <!-- Customer Orders Page -->
+    <div id="orders-page" class="container hidden">
+        <div class="menu-header">
+            <button class="btn btn-outline" id="back-to-dashboard">← Back to Dashboard</button>
+            <h2>My Orders</h2>
+        </div>
+        <div class="orders-container">
+            <div id="customer-orders-list">
+                <!-- Orders loaded dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Profile Page -->
+    <div id="profile-page" class="container hidden">
+        <div class="menu-header">
+            <button class="btn btn-outline" id="back-to-dashboard-profile">← Back to Dashboard</button>
+            <h2>My Profile</h2>
+        </div>
+        <div class="profile-card card">
+            <div class="profile-info">
+                <div class="profile-avatar">
+                    <div id="profile-avatar">U</div>
+                </div>
+                <div class="profile-details">
+                    <h3 id="profile-name">User Name</h3>
+                    <p id="profile-email">user@example.com</p>
+                    <p id="profile-role">Role: Student</p>
+                    <p id="profile-join-date">Member since: </p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Vendor Dashboard -->
+    <div id="vendor-dashboard" class="container hidden">
+        <h2>Vendor Dashboard</h2>
+        <div class="dashboard-tabs">
+            <div class="dashboard-tab active" data-tab="orders">📦 Orders</div>
+            <div class="dashboard-tab" data-tab="restaurants">🏪 My Restaurant</div>
+            <div class="dashboard-tab" data-tab="inventory">📊 Inventory</div>
+        </div>
+
+        <!-- Orders Tab -->
+        <div id="orders-tab" class="dashboard-content">
+            <div class="tab-header">
+                <h3>Recent Orders</h3>
+                <button class="btn btn-primary" id="refresh-orders">🔄 Refresh</button>
+            </div>
+            <div class="orders-list" id="vendor-orders-list">
+                <!-- Orders loaded dynamically -->
+            </div>
+        </div>
+
+        <!-- Restaurants Tab -->
+        <div id="restaurants-tab" class="dashboard-content hidden">
+            <div class="tab-header">
+                <h3>My Restaurant</h3>
+            </div>
+            <div class="restaurants-list" id="vendor-restaurants-list">
+                <!-- Restaurants loaded dynamically -->
+            </div>
+        </div>
+
+        <!--Inventory Tab -->
+        <div id="inventory-tab" class="dashboard-content hidden">
+            <div class="tab-header">
+                <h3>Inventory Management</h3>
+                <button class="btn btn-primary" id="refresh-inventory">🔄 Refresh</button>
+            </div>
+            <div id="inventory-alerts" style="margin-bottom: 20px;">
+                <!-- Alerts loaded dynamically -->
+            </div>
+            <div class="inventory-grid" id="inventory-grid">
+                <!-- Inventory loaded dynamically -->
+            </div>
+        </div>
+    </div>
+
+    <div id="loading-spinner" class="hidden">
+        <div class="spinner"></div>
+    </div>
+    <script src="js/config.js"></script>
+    <script src="js/utils.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/customer.js"></script>
+    <script src="js/vendor.js"></script>
+    <script src="js/orders.js"></script>
+    <script src="js/inventory.js"></script>
+</body>
+</html>
