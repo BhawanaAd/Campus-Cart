@@ -180,15 +180,14 @@ The database is built in **MySQL** with the following key tables:
 ```bash
 git clone https://github.com/yourusername/campus-cart.git
 cd campus-cart
+cd backend
 npm install
-JWT_SECRET=your_secret_key
-DB_HOST=localhost
-DB_USER=root
-DB_PASS=password
-DB_NAME=db_name
+npm start
 
-Import sql file
-campuscart1_db.sql
+cd frontend
+npm intall
+npm start
+
 
 
 
