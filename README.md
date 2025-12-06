@@ -184,8 +184,8 @@ npm install
 JWT_SECRET=your_secret_key
 DB_HOST=localhost
 DB_USER=root
-DB_PASS=gokumika
-DB_NAME=campuscart1
+DB_PASS=password
+DB_NAME=db_name
 
 Import sql file
 campuscart1_db.sql
