@@ -62,7 +62,7 @@ const startServer = async () => {
     try {
         await testConnection();
         
-        app.listen(PORT, () => {
+        app.listen(PORT, '0.0.0.0', () =>  {
             console.log('='.repeat(60));
             console.log('✅ CampusCart Server Started Successfully!');
             console.log('='.repeat(60));
