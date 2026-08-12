@@ -53,7 +53,10 @@ export const AppProvider = ({ children }) => {
   };
 
   const apiCall = async (endpoint, options = {}) => {
-    const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://campus-cart-backend-23np.onrender.com/api';
+    const API_BASE_URL = process.env.REACT_APP_API_URL || 
+      (window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1'
+        ? 'http://localhost:3000/api'
+        : 'https://campus-cart-backend-23np.onrender.com/api');
     const config = {
       headers: {
         'Content-Type': 'application/json',
@@ -104,6 +107,35 @@ export const AppProvider = ({ children }) => {
       }
     } catch (error) {
       showNotification(error.message || 'Login failed', 'error');
+      throw error;
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const signup = async (userData) => {
+    setLoading(true);
+    try {
+      const data = await apiCall('/auth/register', {
+        method: 'POST',
+        body: JSON.stringify(userData)
+      });
+      
+      setAuthToken(data.token);
+      setCurrentUser(data.user);
+      sessionStorage.setItem('authToken', data.token);
+      sessionStorage.setItem('currentUser', JSON.stringify(data.user));
+      
+      showNotification(`Account created successfully! Welcome ${data.user.full_name}`, 'success');
+      if (data.user.user_type === 'student') {
+        setCurrentView('outlets');
+      } else if (data.user.user_type === 'vendor') {
+        setCurrentView('vendor-dashboard');
+      } else {
+        setCurrentView('outlets');
+      }
+    } catch (error) {
+      showNotification(error.message || 'Signup failed', 'error');
       throw error;
     } finally {
       setLoading(false);
@@ -182,8 +214,10 @@ export const AppProvider = ({ children }) => {
     showNotification,
     apiCall,
     login,
-    logout
-    ,listSessions, revokeSession
+    signup,
+    logout,
+    listSessions,
+    revokeSession
   };
 
   return <AppContext.Provider value={value}>{children}</AppContext.Provider>;
