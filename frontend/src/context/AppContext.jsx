@@ -53,7 +53,7 @@ export const AppProvider = ({ children }) => {
   };
 
   const apiCall = async (endpoint, options = {}) => {
-    const API_BASE_URL = process.env.REACT_APP_API_URL || 'http://localhost:3000/api';
+    const API_BASE_URL = process.env.REACT_APP_API_URL || 'https://campus-cart-backend-23np.onrender.com';
     const config = {
       headers: {
         'Content-Type': 'application/json',
