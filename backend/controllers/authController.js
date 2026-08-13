@@ -7,7 +7,7 @@ const authController = {
     // User Signup
     signup: async (req, res) => {
         try {
-            const { email, password, full_name, phone, user_type } = req.body;
+            const { email, password, full_name, phone, user_type, restaurant_name, outlet_type, location, description } = req.body;
             console.log('📝 Signup attempt for:', email);
 
             // Validation
@@ -61,6 +61,50 @@ const authController = {
             );
 
             const userId = result.insertId;
+
+            // If vendor signup, create restaurant/outlet record and seed starter inventory items
+            if (user_type === 'vendor') {
+                const storeName = restaurant_name || `${full_name}'s Store`;
+                const validOutletTypes = ['food', 'grocery', 'stationary'];
+                const storeType = validOutletTypes.includes(outlet_type) ? outlet_type : 'food';
+                const storeLoc = location || 'Campus Outlet';
+                const storeDesc = description || `Campus outlet by ${full_name}`;
+
+                const [resResult] = await pool.execute(
+                    `INSERT INTO restaurants (vendor_id, restaurant_name, description, location, contact_number, outlet_type, is_open) 
+                     VALUES (?, ?, ?, ?, ?, ?, TRUE)`,
+                    [userId, storeName, storeDesc, storeLoc, phone || null, storeType]
+                );
+                const newRestaurantId = resResult.insertId;
+                console.log(`🏪 Created restaurant "${storeName}" (ID: ${newRestaurantId}) for vendor ID: ${userId}`);
+
+                // Seed starter inventory items for new vendor
+                let starterItems = [];
+                if (storeType === 'food') {
+                    starterItems = [
+                        { name: 'Special Combo Meal', desc: 'Delicious combo meal with drink', price: 150, cat: 'Combos', stock: 20 },
+                        { name: 'Cold Beverage', desc: 'Refreshing chilled drink', price: 40, cat: 'Beverages', stock: 35 }
+                    ];
+                } else if (storeType === 'grocery') {
+                    starterItems = [
+                        { name: 'Fresh Milk (1L)', desc: 'Full cream fresh milk', price: 55, cat: 'Dairy', stock: 40 },
+                        { name: 'Bread Loaf', desc: 'Freshly baked wheat bread', price: 35, cat: 'Bakery', stock: 25 }
+                    ];
+                } else {
+                    starterItems = [
+                        { name: 'A4 Notebook (200 pgs)', desc: 'Ruled notebook for study notes', price: 80, cat: 'Writing', stock: 50 },
+                        { name: 'Blue Pen Set (5 pcs)', desc: 'Smooth writing ballpoint pens', price: 50, cat: 'Writing', stock: 60 }
+                    ];
+                }
+
+                for (const item of starterItems) {
+                    await pool.execute(
+                        `INSERT INTO menu_items (restaurant_id, item_name, description, price, category, current_stock, low_stock_threshold, is_available)
+                         VALUES (?, ?, ?, ?, ?, ?, 5, TRUE)`,
+                        [newRestaurantId, item.name, item.desc, item.price, item.cat, item.stock]
+                    );
+                }
+            }
 
             // Create session entry and generate JWT token with sessionId
             const sessionId = uuidv4();

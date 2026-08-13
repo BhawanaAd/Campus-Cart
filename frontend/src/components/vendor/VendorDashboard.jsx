@@ -196,6 +196,7 @@ export default function VendorDashboard() {
         {activeTab === 'inventory' && (
           <VendorInventory 
             inventory={inventory}
+            restaurants={restaurants}
             restockItem={restockItem}
             loading={loadingState.inventory}
             onRefresh={loadInventory}
