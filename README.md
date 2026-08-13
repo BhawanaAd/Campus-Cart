@@ -174,21 +174,7 @@ The database is built in **MySQL** with the following key tables:
 
 ---
 
-# 🛠️ Installation & Setup
 
-### **1. Clone the Repository**
-```bash
-git clone https://github.com/yourusername/campus-cart.git
-cd campus-cart
-npm install
-JWT_SECRET=your_secret_key
-DB_HOST=localhost
-DB_USER=root
-DB_PASS=gokumika
-DB_NAME=campuscart1
-
-Import sql file
-campuscart1_db.sql
 
 
 
