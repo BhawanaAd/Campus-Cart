@@ -106,7 +106,7 @@ export default function SupportChat({ onClose }) {
       <div className="fixed inset-0 bg-black bg-opacity-50 z-50" onClick={onClose}></div>
 
       {/* Chat Window */}
-      <div className="fixed right-6 bottom-6 w-full max-w-2xl h-[600px] bg-white rounded-2xl shadow-2xl z-50 flex flex-col">
+      <div className="fixed inset-x-4 bottom-4 top-4 md:inset-x-auto md:top-auto md:right-6 md:bottom-6 w-auto md:w-full max-w-2xl md:h-[600px] bg-white rounded-2xl shadow-2xl z-50 flex flex-col">
         {/* Header */}
         <div className="bg-gradient-to-r from-blue-600 to-purple-600 text-white p-4 rounded-t-2xl flex justify-between items-center">
           <div>
