@@ -16,6 +16,7 @@ export default function VendorInventory({ inventory, restockItem, restaurants = 
   const [itemName, setItemName] = useState('');
   const [category, setCategory] = useState('Fast Food');
   const [price, setPrice] = useState('');
+  const [imageUrl, setImageUrl] = useState('');
   const [currentStock, setCurrentStock] = useState(20);
   const [lowStockThreshold, setLowStockThreshold] = useState(5);
   const [description, setDescription] = useState('');
@@ -92,6 +93,7 @@ export default function VendorInventory({ inventory, restockItem, restaurants = 
           item_name: itemName,
           category,
           price: parseFloat(price),
+          image_url: imageUrl.trim() || null,
           current_stock: parseInt(currentStock) || 0,
           low_stock_threshold: parseInt(lowStockThreshold) || 5,
           description
@@ -103,6 +105,7 @@ export default function VendorInventory({ inventory, restockItem, restaurants = 
       // Reset form
       setItemName('');
       setPrice('');
+      setImageUrl('');
       setDescription('');
       setCurrentStock(20);
 
@@ -112,6 +115,24 @@ export default function VendorInventory({ inventory, restockItem, restaurants = 
       showNotification(err.message || 'Failed to add item', 'error');
     } finally {
       setIsSubmitting(false);
+      setLoading(false);
+    }
+  };
+
+  const handleToggleAvailability = async (item) => {
+    const currentBool = item.is_available == 1 || item.is_available === true;
+    const newStatus = !currentBool;
+    setLoading(true);
+    try {
+      await apiCall(`/menu/vendor/item/${item.item_id}/availability`, {
+        method: 'PATCH',
+        body: JSON.stringify({ is_available: newStatus })
+      });
+      showNotification(`"${item.item_name}" marked as ${newStatus ? 'Available ✅' : 'Unavailable 🔴'}`, 'success');
+      if (onRefresh) await onRefresh();
+    } catch (err) {
+      showNotification(err.message || 'Failed to update item availability', 'error');
+    } finally {
       setLoading(false);
     }
   };
@@ -209,13 +230,24 @@ export default function VendorInventory({ inventory, restockItem, restaurants = 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {inventory.map((item) => {
               const status = getStockStatus(item);
+              const isAvailable = item.is_available == 1 || item.is_available === true;
               return (
-                <div key={item.item_id} className="border rounded-xl p-5 hover:shadow-lg transition-shadow relative bg-white">
+                <div key={item.item_id} className={`border rounded-xl p-5 hover:shadow-lg transition-all relative bg-white ${!isAvailable ? 'opacity-75 bg-gray-50' : ''}`}>
                   {/* Item Header */}
                   <div className="flex justify-between items-start mb-3">
-                    <div className="flex-1 pr-2">
-                      <h4 className="font-bold text-lg line-clamp-1">{item.item_name}</h4>
-                      <p className="text-xs font-medium text-gray-500">{item.restaurant_name}</p>
+                    <div className="flex items-center gap-3 flex-1 pr-2">
+                      {item.image_url && (
+                        <img
+                          src={item.image_url}
+                          alt={item.item_name}
+                          className="w-12 h-12 rounded-lg object-cover border shrink-0"
+                          onError={(e) => { e.target.style.display = 'none'; }}
+                        />
+                      )}
+                      <div>
+                        <h4 className="font-bold text-lg line-clamp-1">{item.item_name}</h4>
+                        <p className="text-xs font-medium text-gray-500">{item.restaurant_name}</p>
+                      </div>
                     </div>
                     <div className="flex items-center gap-2">
                       <div className={`${status.badge} text-white px-2.5 py-1 rounded-full text-xs font-bold`}>
@@ -245,11 +277,28 @@ export default function VendorInventory({ inventory, restockItem, restaurants = 
                       <span className="text-gray-600">Threshold:</span>
                       <span className="font-semibold">{item.low_stock_threshold}</span>
                     </div>
-                    <div className="flex justify-between">
-                      <span className="text-gray-600">Status:</span>
+                    <div className="flex justify-between items-center">
+                      <span className="text-gray-600">Stock Status:</span>
                       <span className={`${status.color} px-2 py-0.5 rounded text-xs font-bold`}>
                         {status.label}
                       </span>
+                    </div>
+                    
+                    {/* Item Availability Toggle */}
+                    <div className="flex justify-between items-center pt-2 border-t mt-2">
+                      <span className="text-xs font-semibold text-gray-700">Availability:</span>
+                      <button
+                        type="button"
+                        onClick={() => handleToggleAvailability(item)}
+                        className={`px-3 py-1 rounded-full text-xs font-bold transition-all flex items-center gap-1 ${
+                          isAvailable
+                            ? 'bg-emerald-100 text-emerald-800 hover:bg-emerald-200 border border-emerald-300'
+                            : 'bg-red-100 text-red-800 hover:bg-red-200 border border-red-300'
+                        }`}
+                        title="Click to toggle item availability for customers"
+                      >
+                        {isAvailable ? '✅ Available' : '🔴 Unavailable'}
+                      </button>
                     </div>
                   </div>
 
@@ -410,6 +459,18 @@ export default function VendorInventory({ inventory, restockItem, restaurants = 
                     className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500"
                     placeholder="e.g. Veg Cheese Burger, A4 Spiral Notebook, Cold Coffee"
                     required
+                  />
+                </div>
+
+                {/* Image URL */}
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 mb-1">Image URL <span className="text-gray-400 font-normal">(Optional)</span></label>
+                  <input
+                    type="url"
+                    value={imageUrl}
+                    onChange={(e) => setImageUrl(e.target.value)}
+                    className="w-full px-4 py-2.5 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500"
+                    placeholder="https://example.com/item-image.jpg"
                   />
                 </div>
 

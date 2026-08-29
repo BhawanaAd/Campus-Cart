@@ -71,6 +71,12 @@ export default function StoreMenu() {
     const item = menuItems.find((i) => i.item_id === itemId);
     if (!item) return;
 
+    const isAvailable = item.is_available == 1 || item.is_available === true;
+    if (!isAvailable && change > 0) {
+      showNotification('This item is currently unavailable', 'warning');
+      return;
+    }
+
     const cartItem = cart.find((i) => i.item_id === itemId);
     const currentQty = cartItem ? cartItem.quantity : 0;
     const newQty = currentQty + change;
@@ -207,16 +213,29 @@ export default function StoreMenu() {
               {groupedMenu[category].map((item) => {
                 const qty = getItemQuantity(item.item_id);
                 const style = getItemStyle(item.category, selectedStore.type);
+                const isAvailable = item.is_available == 1 || item.is_available === true;
                 return (
                   <div
                     key={item.item_id}
-                    className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow p-5 flex items-center gap-4"
+                    className={`bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow p-5 flex items-center gap-4 ${!isAvailable ? 'opacity-70 bg-gray-50' : ''}`}
                   >
-                    {/* Placeholder thumbnail — swap for a real <img> once photos are ready */}
+                    {/* Thumbnail: Real image if available, else styled category gradient */}
                     <div
-                      className={`hidden sm:flex w-20 h-20 shrink-0 rounded-xl bg-gradient-to-br ${style.gradient} items-center justify-center text-4xl shadow-inner`}
+                      className={`flex w-16 h-16 sm:w-20 sm:h-20 shrink-0 rounded-xl overflow-hidden bg-gradient-to-br ${style.gradient} items-center justify-center text-3xl sm:text-4xl shadow-inner border border-gray-100`}
                     >
-                      {style.emoji}
+                      {item.image_url ? (
+                        <img
+                          src={item.image_url}
+                          alt={item.item_name}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            e.target.parentNode.innerText = style.emoji;
+                          }}
+                        />
+                      ) : (
+                        <span>{style.emoji}</span>
+                      )}
                     </div>
 
                     <div className="flex-1 min-w-0">
@@ -225,20 +244,21 @@ export default function StoreMenu() {
                         <p className="text-sm text-gray-600 mb-2">{item.description}</p>
                       )}
                       <p className="text-xl font-bold text-red-600">₹{item.price}</p>
-                      {item.current_stock <= item.low_stock_threshold && item.current_stock > 0 && (
+                      {!isAvailable ? (
+                        <p className="text-xs text-red-600 mt-1 font-semibold">🔴 Currently Unavailable</p>
+                      ) : item.current_stock <= item.low_stock_threshold && item.current_stock > 0 ? (
                         <p className="text-xs text-orange-600 mt-1 flex items-center gap-1">
                           <span>⚠️</span> Only {item.current_stock} left!
                         </p>
-                      )}
-                      {item.current_stock === 0 && (
+                      ) : item.current_stock === 0 ? (
                         <p className="text-xs text-red-600 mt-1 font-semibold">Out of Stock</p>
-                      )}
+                      ) : null}
                     </div>
 
                     <div className="flex items-center gap-3 ml-4">
                       <button
                         onClick={() => updateQuantity(item.item_id, -1)}
-                        disabled={qty === 0}
+                        disabled={qty === 0 || !isAvailable}
                         className="w-10 h-10 rounded-full border-2 border-red-600 text-red-600 disabled:border-gray-300 disabled:text-gray-300 hover:bg-red-600 hover:text-white transition-all flex items-center justify-center font-bold disabled:cursor-not-allowed"
                       >
                         <Minus size={18} />
@@ -246,7 +266,7 @@ export default function StoreMenu() {
                       <span className="w-8 text-center font-bold text-lg">{qty}</span>
                       <button
                         onClick={() => updateQuantity(item.item_id, 1)}
-                        disabled={qty >= item.current_stock || item.current_stock === 0}
+                        disabled={qty >= item.current_stock || item.current_stock === 0 || !isAvailable}
                         className="w-10 h-10 rounded-full border-2 border-red-600 text-red-600 disabled:border-gray-300 disabled:text-gray-300 hover:bg-red-600 hover:text-white transition-all flex items-center justify-center font-bold disabled:cursor-not-allowed"
                       >
                         <Plus size={18} />
