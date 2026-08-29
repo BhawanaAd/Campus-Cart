@@ -1,6 +1,67 @@
 import React, { useState } from 'react';
 import { useApp } from '../context/AppContext';
-import { User, Mail, Lock, Phone, Store, MapPin, Tag, FileText, Eye, EyeOff } from 'lucide-react';
+import {
+  User,
+  Mail,
+  Lock,
+  Phone,
+  Store,
+  MapPin,
+  Tag,
+  FileText,
+  Eye,
+  EyeOff,
+  CheckCircle2,
+  XCircle,
+  Sparkles
+} from 'lucide-react';
+
+// Checks a password against 5 common strength criteria.
+const getPasswordChecks = (pwd) => ({
+  length: pwd.length >= 8,
+  uppercase: /[A-Z]/.test(pwd),
+  lowercase: /[a-z]/.test(pwd),
+  number: /[0-9]/.test(pwd),
+  special: /[^A-Za-z0-9]/.test(pwd)
+});
+
+// Score 0-5 -> label/color for the strength meter.
+const STRENGTH_META = [
+  { label: 'Very Weak', barColor: 'bg-red-500', textColor: 'text-red-600' },
+  { label: 'Weak', barColor: 'bg-red-500', textColor: 'text-red-600' },
+  { label: 'Fair', barColor: 'bg-orange-500', textColor: 'text-orange-600' },
+  { label: 'Good', barColor: 'bg-yellow-500', textColor: 'text-yellow-600' },
+  { label: 'Strong', barColor: 'bg-green-500', textColor: 'text-green-600' },
+  { label: 'Very Strong', barColor: 'bg-green-600', textColor: 'text-green-700' }
+];
+
+// Generates a random password guaranteed to hit every strength criterion.
+const generateStrongPassword = () => {
+  const upper = 'ABCDEFGHJKLMNPQRSTUVWXYZ';
+  const lower = 'abcdefghijkmnpqrstuvwxyz';
+  const numbers = '23456789';
+  const special = '!@#$%^&*?';
+  const all = upper + lower + numbers + special;
+
+  const chars = [
+    upper[Math.floor(Math.random() * upper.length)],
+    lower[Math.floor(Math.random() * lower.length)],
+    numbers[Math.floor(Math.random() * numbers.length)],
+    special[Math.floor(Math.random() * special.length)]
+  ];
+
+  while (chars.length < 12) {
+    chars.push(all[Math.floor(Math.random() * all.length)]);
+  }
+
+  // Shuffle so the guaranteed characters aren't always in the same spot
+  for (let i = chars.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    [chars[i], chars[j]] = [chars[j], chars[i]];
+  }
+
+  return chars.join('');
+};
 
 export default function Login() {
   const { login, signup, showNotification } = useApp();
@@ -23,7 +84,19 @@ export default function Login() {
   const [location, setLocation] = useState('');
   const [description, setDescription] = useState('');
 
- 
+  const passwordChecks = getPasswordChecks(password);
+  const passwordScore = Object.values(passwordChecks).filter(Boolean).length; // 0-5
+  const strength = STRENGTH_META[passwordScore];
+
+  const handleGeneratePassword = () => {
+    const newPwd = generateStrongPassword();
+    setPassword(newPwd);
+    setConfirmPassword(newPwd);
+    setShowPassword(true);
+    setShowConfirmPassword(true);
+    showNotification('Strong password generated — make sure to save it!', 'success');
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
@@ -37,8 +110,10 @@ export default function Login() {
           return;
         }
 
-        if (password.length < 6) {
-          showNotification('Password must be at least 6 characters long', 'error');
+        const checks = getPasswordChecks(password);
+        const score = Object.values(checks).filter(Boolean).length;
+        if (score < 4) {
+          showNotification('Please choose a stronger password — check the requirements below', 'error');
           setIsLoading(false);
           return;
         }
@@ -256,7 +331,19 @@ export default function Login() {
 
           {/* Password */}
           <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-1.5">Password</label>
+            <div className="flex items-center justify-between mb-1.5">
+              <label className="block text-sm font-semibold text-gray-700">Password</label>
+              {isSignUp && (
+                <button
+                  type="button"
+                  onClick={handleGeneratePassword}
+                  className="flex items-center gap-1 text-xs font-bold text-red-600 hover:text-red-700 transition-colors"
+                >
+                  <Sparkles size={14} />
+                  Generate strong password
+                </button>
+              )}
+            </div>
             <div className="relative">
               <Lock size={18} className="absolute left-3 top-3.5 text-gray-400" />
               <input
@@ -277,6 +364,45 @@ export default function Login() {
                 {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
               </button>
             </div>
+
+            {/* Strength meter + requirements checklist, Sign Up only */}
+            {isSignUp && password.length > 0 && (
+              <div className="mt-2.5">
+                <div className="flex gap-1 mb-1.5">
+                  {[0, 1, 2, 3, 4].map((i) => (
+                    <div
+                      key={i}
+                      className={`h-1.5 flex-1 rounded-full transition-colors ${
+                        i < passwordScore ? strength.barColor : 'bg-gray-200'
+                      }`}
+                    />
+                  ))}
+                </div>
+                <p className={`text-xs font-bold mb-2 ${strength.textColor}`}>
+                  {strength.label}
+                </p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-3 gap-y-1">
+                  {[
+                    { key: 'length', label: '8+ characters' },
+                    { key: 'uppercase', label: 'Uppercase letter' },
+                    { key: 'lowercase', label: 'Lowercase letter' },
+                    { key: 'number', label: 'A number' },
+                    { key: 'special', label: 'Special character' }
+                  ].map(({ key, label }) => (
+                    <div key={key} className="flex items-center gap-1.5 text-xs">
+                      {passwordChecks[key] ? (
+                        <CheckCircle2 size={14} className="text-green-600 shrink-0" />
+                      ) : (
+                        <XCircle size={14} className="text-gray-300 shrink-0" />
+                      )}
+                      <span className={passwordChecks[key] ? 'text-gray-700' : 'text-gray-400'}>
+                        {label}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
 
           {/* Confirm Password (Sign Up only) */}
