@@ -10,6 +10,7 @@ const menuRoutes = require('./routes/menu');
 const orderRoutes = require('./routes/orders');
 const inventoryRoutes = require('./routes/inventory');
 const supportRoutes = require('./routes/support');
+const paymentRoutes = require('./routes/payment');
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -33,6 +34,11 @@ app.use('/api/menu', menuRoutes);
 app.use('/api/orders', orderRoutes);
 app.use('/api/inventory', inventoryRoutes);
 app.use('/api/support', supportRoutes);
+app.use('/api/payment', paymentRoutes);
+
+// Alias endpoints for direct /api/create-order and /api/verify-payment
+app.use('/api', paymentRoutes);
+
 
 // Health check
 app.get('/api/health', (req, res) => {
