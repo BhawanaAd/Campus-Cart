@@ -284,6 +284,45 @@ const orderController = {
         }
     },
 
+    // Students cancelling their own order. Only allowed while the order is
+    // still 'pending' (i.e. the vendor hasn't started preparing it yet).
+    cancelOrder: async (req, res) => {
+        try {
+            const { order_id } = req.params;
+            const student_id = req.user.user_id;
+
+            const [orders] = await pool.execute(
+                'SELECT order_id, order_status FROM orders WHERE order_id = ? AND student_id = ?',
+                [order_id, student_id]
+            );
+
+            if (orders.length === 0) {
+                return res.status(404).json({ error: 'Order not found' });
+            }
+
+            if (orders[0].order_status !== 'pending') {
+                return res.status(400).json({
+                    error: `This order can no longer be cancelled (current status: ${orders[0].order_status})`
+                });
+            }
+
+            await pool.execute(
+                'UPDATE orders SET order_status = ?, updated_at = CURRENT_TIMESTAMP WHERE order_id = ?',
+                ['cancelled', order_id]
+            );
+
+            console.log(`✅ Order ${order_id} cancelled by student ${student_id}`);
+            res.json({
+                message: 'Order cancelled successfully',
+                order_id,
+                order_status: 'cancelled'
+            });
+        } catch (error) {
+            console.error('❌ Cancel order error:', error);
+            res.status(500).json({ error: 'Internal server error' });
+        }
+    },
+
     getOrderDetails: async (req, res) => {
         try {
             const { order_id } = req.params;

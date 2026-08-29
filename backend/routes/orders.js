@@ -7,12 +7,13 @@ const router = express.Router();
 // Customer routes
 router.post('/', authenticateToken, requireRole(['student']), orderController.placeOrder);
 router.get('/my-orders', authenticateToken, requireRole(['student']), orderController.getCustomerOrders);
+router.patch('/:order_id/cancel', authenticateToken, requireRole(['student']), orderController.cancelOrder);
 
 // Vendor routes
 router.get('/vendor/orders', 
     authenticateToken, 
     requireRole(['vendor']), 
-    orderController.getVendorOrders  // ADD THIS METHOD TO orderController
+    orderController.getVendorOrders  
 );
 
 router.patch('/:order_id/status', authenticateToken, requireRole(['vendor']), orderController.updateOrderStatus);
