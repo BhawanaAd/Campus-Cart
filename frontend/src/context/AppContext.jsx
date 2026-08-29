@@ -11,6 +11,7 @@ export const useApp = () => {
 };
 
 export const AppProvider = ({ children }) => {
+  // Use sessionStorage so each browser tab can have an independent session
   const [authToken, setAuthToken] = useState(sessionStorage.getItem('authToken'));
   const [currentUser, setCurrentUser] = useState(
     sessionStorage.getItem('currentUser') ? JSON.parse(sessionStorage.getItem('currentUser')) : null
@@ -24,16 +25,18 @@ export const AppProvider = ({ children }) => {
     }
   });
 
+  // Internal view state (raw setter, does NOT touch browser history)
   const [currentView, setCurrentViewState] = useState('login');
   const [selectedOutlet, setSelectedOutlet] = useState(null);
   const [selectedStore, setSelectedStore] = useState(null);
   const [loading, setLoading] = useState(false);
   const [notification, setNotification] = useState(null);
+
+  const [cartOpen, setCartOpen] = useState(false);
   const setCurrentView = (view) => {
     setCurrentViewState(view);
     window.history.pushState({ view }, '', window.location.pathname);
   };
-
   useEffect(() => {
     window.history.replaceState({ view: currentView }, '', window.location.pathname);
 
@@ -45,14 +48,15 @@ export const AppProvider = ({ children }) => {
 
     window.addEventListener('popstate', handlePopState);
     return () => window.removeEventListener('popstate', handlePopState);
+
   }, []);
 
   useEffect(() => {
     if (authToken && currentUser) {
       setCurrentView(currentUser.user_type === 'student' ? 'outlets' : 'vendor-dashboard');
     }
-
   }, [authToken, currentUser]);
+
   useEffect(() => {
     try {
       sessionStorage.setItem('cart', JSON.stringify(cart));
@@ -104,12 +108,12 @@ export const AppProvider = ({ children }) => {
       
       setAuthToken(data.token);
       setCurrentUser(data.user);
-
+      // Store token and user in sessionStorage so each tab can be independent
       sessionStorage.setItem('authToken', data.token);
       sessionStorage.setItem('currentUser', JSON.stringify(data.user));
       
       showNotification(`Welcome ${data.user.full_name}!`, 'success');
-  
+      // Route users to appropriate view based on role
       if (data.user.user_type === 'student') {
         setCurrentView('outlets');
       } else if (data.user.user_type === 'vendor') {
@@ -175,6 +179,7 @@ export const AppProvider = ({ children }) => {
     setCart([]);
     setSelectedOutlet(null);
     setSelectedStore(null);
+    setCartOpen(false);
     // Only clear sessionStorage keys related to this tab
     sessionStorage.removeItem('authToken');
     sessionStorage.removeItem('currentUser');
@@ -216,6 +221,8 @@ export const AppProvider = ({ children }) => {
     cart,
     setCart,
     clearCart,
+    cartOpen,
+    setCartOpen,
     currentView,
     setCurrentView,
     selectedOutlet,

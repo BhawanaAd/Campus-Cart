@@ -3,10 +3,33 @@ import { ShoppingCart, LogOut, FileText, Menu, X } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
 export default function Header() {
-  const { currentUser, logout, setCurrentView, cart } = useApp();
+  const {
+    currentUser,
+    logout,
+    setCurrentView,
+    cart,
+    setCartOpen,
+    selectedStore,
+    setSelectedStore
+  } = useApp();
   const [showMenu, setShowMenu] = useState(false);
 
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
+
+  const handleCartClick = () => {
+    if (cart.length === 0) return;
+    const firstItem = cart[0];
+    if (!selectedStore || selectedStore.id !== firstItem.store_id) {
+      setSelectedStore({
+        id: firstItem.store_id,
+        name: firstItem.store_name,
+        type: firstItem.store_type
+      });
+    }
+
+    setCurrentView('store-menu');
+    setCartOpen(true);
+  };
 
   return (
     <header className="bg-white shadow-md sticky top-0 z-40">
@@ -37,12 +60,16 @@ export default function Header() {
                 <span className="hidden md:inline">My Orders</span>
                </button>
                 {cartCount > 0 && (
-                  <div className="relative">
+                  <button
+                    onClick={handleCartClick}
+                    className="relative p-1 hover:bg-gray-100 rounded transition-colors"
+                    title="View cart"
+                  >
                     <ShoppingCart size={24} className="text-gray-700" />
-                    <span className="absolute -top-2 -right-2 bg-red-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
+                    <span className="absolute -top-1.5 -right-1.5 bg-red-600 text-white text-xs rounded-full w-5 h-5 flex items-center justify-center font-bold">
                       {cartCount}
                     </span>
-                  </div>
+                  </button>
                 )}
               </>
             )}
