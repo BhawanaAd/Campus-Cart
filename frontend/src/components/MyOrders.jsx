@@ -168,13 +168,22 @@ export default function MyOrders() {
 
                 {/* Payment Status */}
                 <div className="mt-4 flex items-center justify-between pt-4 border-t">
-                  <span className="text-sm text-gray-600">
-                    Payment Status: <span className="font-semibold">{order.payment_status}</span>
-                  </span>
+                  <div className="flex items-center gap-2 text-sm">
+                    <span className="text-gray-600 font-medium">Payment Status:</span>
+                    <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                      order.payment_status === 'completed'
+                        ? 'bg-green-100 text-green-800 border border-green-300'
+                        : order.payment_status === 'failed'
+                        ? 'bg-red-100 text-red-800 border border-red-300'
+                        : 'bg-yellow-100 text-yellow-800 border border-yellow-300'
+                    }`}>
+                      {order.payment_status === 'completed' ? '✓ PAID (Online)' : order.payment_status.toUpperCase()}
+                    </span>
+                  </div>
                   {order.order_status === 'pending' && (
                     <button
                       onClick={() => setCancelTarget(order)}
-                      className="text-red-600 hover:text-red-700 text-sm font-medium"
+                      className="text-red-600 hover:text-red-700 text-sm font-medium hover:underline"
                     >
                       Cancel Order
                     </button>
