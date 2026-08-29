@@ -158,7 +158,7 @@ export default function Login() {
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
-                placeholder={userType === 'vendor' ? 'vendor@gmail.com' : 'student@gmail.edu'}
+                placeholder={userType === 'vendor' ? 'vendor@gmail.com' : 'student@gmail.com'}
                 required
               />
             </div>
