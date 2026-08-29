@@ -34,12 +34,13 @@ const getItemStyle = (category, storeType) => {
 };
 
 export default function StoreMenu() {
-  const { selectedStore, setCurrentView, cart, setCart, apiCall, setLoading, showNotification } = useApp();
+  const { currentUser, selectedStore, setCurrentView, cart, setCart, apiCall, setLoading, showNotification } = useApp();
   const [menuItems, setMenuItems] = useState([]);
   const [cartOpen, setCartOpen] = useState(false);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [deliveryLocation, setDeliveryLocation] = useState('');
   const [specialInstructions, setSpecialInstructions] = useState('');
+  const [paymentMethod, setPaymentMethod] = useState('razorpay');
 
   useEffect(() => {
     if (selectedStore) {
@@ -70,6 +71,12 @@ export default function StoreMenu() {
     }
     const item = menuItems.find((i) => i.item_id === itemId);
     if (!item) return;
+
+    const isAvailable = item.is_available == 1 || item.is_available === true;
+    if (!isAvailable && change > 0) {
+      showNotification('This item is currently unavailable', 'warning');
+      return;
+    }
 
     const cartItem = cart.find((i) => i.item_id === itemId);
     const currentQty = cartItem ? cartItem.quantity : 0;
@@ -124,6 +131,7 @@ export default function StoreMenu() {
     }
     setDeliveryLocation('Campus Hostel');
     setSpecialInstructions('');
+    setPaymentMethod('razorpay');
     setCheckoutOpen(true);
   };
 
@@ -143,22 +151,118 @@ export default function StoreMenu() {
         })),
         delivery_location: deliveryLocation.trim(),
         special_instructions: specialInstructions.trim(),
-        payment_method: 'cash'
+        payment_method: paymentMethod === 'cash' ? 'cash' : 'card'
       };
 
+      // 1. Create order in CampusCart DB
       const data = await apiCall('/orders', {
         method: 'POST',
         body: JSON.stringify(orderData)
       });
 
-      setCart([]);
-      setCheckoutOpen(false);
-      setCartOpen(false);
-      showNotification(`Order placed successfully! Order #${data.order_id}`, 'success');
+      // Cash on Delivery option
+      if (paymentMethod === 'cash') {
+        setCart([]);
+        setCheckoutOpen(false);
+        setCartOpen(false);
+        showNotification(`Order placed successfully! Order #${data.order_id}`, 'success');
 
-      setTimeout(() => {
-        setCurrentView('my-orders');
-      }, 2000);
+        setTimeout(() => {
+          setCurrentView('my-orders');
+        }, 1500);
+        return;
+      }
+
+      // Razorpay Payment Option
+      const amountInPaise = Math.round(cartTotal * 100);
+      if (amountInPaise < 100) {
+        showNotification('Order amount must be at least ₹1 (100 paise) for online payment', 'warning');
+        setLoading(false);
+        return;
+      }
+
+      // 2. Create order on Razorpay Backend
+      const razorpayOrder = await apiCall('/create-order', {
+        method: 'POST',
+        body: JSON.stringify({
+          amount: amountInPaise,
+          currency: 'INR',
+          receipt: `rcpt_order_${data.order_id}`
+        })
+      });
+
+      // Check if Razorpay Checkout script is loaded
+      if (!window.Razorpay) {
+        showNotification('Razorpay Checkout SDK failed to load. Please check internet connection.', 'error');
+        setLoading(false);
+        return;
+      }
+
+      const keyId = process.env.REACT_APP_RAZORPAY_KEY_ID || 'rzp_test_TVbOC34BmBwl5F';
+
+      // 3. Open Razorpay Checkout Modal
+      const options = {
+        key: keyId,
+        amount: razorpayOrder.amount,
+        currency: razorpayOrder.currency,
+        name: 'Campus Cart',
+        description: `Payment for Order #${data.order_id}`,
+        order_id: razorpayOrder.order_id,
+        handler: async function (response) {
+          setLoading(true);
+          try {
+            // 4. Verify payment signature on backend
+            const verifyRes = await apiCall('/verify-payment', {
+              method: 'POST',
+              body: JSON.stringify({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+                order_id: data.order_id
+              })
+            });
+
+            if (verifyRes.success) {
+              setCart([]);
+              setCheckoutOpen(false);
+              setCartOpen(false);
+              showNotification(`Payment Successful! Order #${data.order_id} confirmed.`, 'success');
+              setTimeout(() => {
+                setCurrentView('my-orders');
+              }, 1500);
+            } else {
+              showNotification(verifyRes.error || 'Payment signature verification failed.', 'error');
+            }
+          } catch (verifyErr) {
+            showNotification(verifyErr.message || 'Payment verification failed on server', 'error');
+          } finally {
+            setLoading(false);
+          }
+        },
+        modal: {
+          ondismiss: function () {
+            showNotification('Payment cancelled by user. Order created with pending payment status.', 'warning');
+            setCheckoutOpen(false);
+            setCartOpen(false);
+            setCurrentView('my-orders');
+          }
+        },
+        prefill: {
+          name: currentUser?.full_name || '',
+          email: currentUser?.email || '',
+          contact: currentUser?.phone || ''
+        },
+        theme: {
+          color: '#e23744'
+        }
+      };
+
+      const rzp = new window.Razorpay(options);
+      rzp.on('payment.failed', function (response) {
+        showNotification(`Payment Failed: ${response.error.description || 'Transaction declined'}`, 'error');
+      });
+
+      rzp.open();
     } catch (error) {
       showNotification(error.message || 'Failed to place order', 'error');
     } finally {
@@ -207,16 +311,29 @@ export default function StoreMenu() {
               {groupedMenu[category].map((item) => {
                 const qty = getItemQuantity(item.item_id);
                 const style = getItemStyle(item.category, selectedStore.type);
+                const isAvailable = item.is_available == 1 || item.is_available === true;
                 return (
                   <div
                     key={item.item_id}
-                    className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow p-5 flex items-center gap-4"
+                    className={`bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow p-5 flex items-center gap-4 ${!isAvailable ? 'opacity-70 bg-gray-50' : ''}`}
                   >
-                    {/* Placeholder thumbnail — swap for a real <img> once photos are ready */}
+                    {/* Thumbnail: Real image if available, else styled category gradient */}
                     <div
-                      className={`hidden sm:flex w-20 h-20 shrink-0 rounded-xl bg-gradient-to-br ${style.gradient} items-center justify-center text-4xl shadow-inner`}
+                      className={`flex w-16 h-16 sm:w-20 sm:h-20 shrink-0 rounded-xl overflow-hidden bg-gradient-to-br ${style.gradient} items-center justify-center text-3xl sm:text-4xl shadow-inner border border-gray-100`}
                     >
-                      {style.emoji}
+                      {item.image_url ? (
+                        <img
+                          src={item.image_url}
+                          alt={item.item_name}
+                          className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.target.style.display = 'none';
+                            e.target.parentNode.innerText = style.emoji;
+                          }}
+                        />
+                      ) : (
+                        <span>{style.emoji}</span>
+                      )}
                     </div>
 
                     <div className="flex-1 min-w-0">
@@ -225,20 +342,21 @@ export default function StoreMenu() {
                         <p className="text-sm text-gray-600 mb-2">{item.description}</p>
                       )}
                       <p className="text-xl font-bold text-red-600">₹{item.price}</p>
-                      {item.current_stock <= item.low_stock_threshold && item.current_stock > 0 && (
+                      {!isAvailable ? (
+                        <p className="text-xs text-red-600 mt-1 font-semibold">🔴 Currently Unavailable</p>
+                      ) : item.current_stock <= item.low_stock_threshold && item.current_stock > 0 ? (
                         <p className="text-xs text-orange-600 mt-1 flex items-center gap-1">
                           <span>⚠️</span> Only {item.current_stock} left!
                         </p>
-                      )}
-                      {item.current_stock === 0 && (
+                      ) : item.current_stock === 0 ? (
                         <p className="text-xs text-red-600 mt-1 font-semibold">Out of Stock</p>
-                      )}
+                      ) : null}
                     </div>
 
                     <div className="flex items-center gap-3 ml-4">
                       <button
                         onClick={() => updateQuantity(item.item_id, -1)}
-                        disabled={qty === 0}
+                        disabled={qty === 0 || !isAvailable}
                         className="w-10 h-10 rounded-full border-2 border-red-600 text-red-600 disabled:border-gray-300 disabled:text-gray-300 hover:bg-red-600 hover:text-white transition-all flex items-center justify-center font-bold disabled:cursor-not-allowed"
                       >
                         <Minus size={18} />
@@ -246,7 +364,7 @@ export default function StoreMenu() {
                       <span className="w-8 text-center font-bold text-lg">{qty}</span>
                       <button
                         onClick={() => updateQuantity(item.item_id, 1)}
-                        disabled={qty >= item.current_stock || item.current_stock === 0}
+                        disabled={qty >= item.current_stock || item.current_stock === 0 || !isAvailable}
                         className="w-10 h-10 rounded-full border-2 border-red-600 text-red-600 disabled:border-gray-300 disabled:text-gray-300 hover:bg-red-600 hover:text-white transition-all flex items-center justify-center font-bold disabled:cursor-not-allowed"
                       >
                         <Plus size={18} />
@@ -385,6 +503,44 @@ export default function StoreMenu() {
                     rows={3}
                     className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all resize-none"
                   />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                  Select Payment Method <span className="text-red-600">*</span>
+                </label>
+                <div className="grid grid-cols-2 gap-3">
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod('razorpay')}
+                    className={`p-3.5 rounded-xl border-2 text-left flex flex-col justify-between transition-all ${
+                      paymentMethod === 'razorpay'
+                        ? 'border-red-600 bg-red-50 text-red-900 shadow-sm'
+                        : 'border-gray-200 hover:border-gray-300 text-gray-700 bg-white'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-bold text-sm flex items-center gap-1">💳 Online</span>
+                      <span className="text-[10px] bg-blue-100 text-blue-800 font-semibold px-2 py-0.5 rounded-full">Razorpay</span>
+                    </div>
+                    <span className="text-xs text-gray-500">UPI, Cards, NetBanking</span>
+                  </button>
+
+                  <button
+                    type="button"
+                    onClick={() => setPaymentMethod('cash')}
+                    className={`p-3.5 rounded-xl border-2 text-left flex flex-col justify-between transition-all ${
+                      paymentMethod === 'cash'
+                        ? 'border-red-600 bg-red-50 text-red-900 shadow-sm'
+                        : 'border-gray-200 hover:border-gray-300 text-gray-700 bg-white'
+                    }`}
+                  >
+                    <div className="flex items-center justify-between mb-1">
+                      <span className="font-bold text-sm flex items-center gap-1">💵 Cash</span>
+                    </div>
+                    <span className="text-xs text-gray-500">Pay on delivery</span>
+                  </button>
                 </div>
               </div>
 

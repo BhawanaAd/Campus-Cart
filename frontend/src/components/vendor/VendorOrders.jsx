@@ -155,9 +155,23 @@ export default function VendorOrders({ orders = [], updateOrderStatus, loading =
                   </div>
                 </div>
               )}
-              <div className="text-sm">
-                <span className="font-semibold">Total Amount:</span>{' '}
-                <span className="text-red-600 font-bold text-lg">₹{order.total_amount}</span>
+              <div className="flex items-center justify-between text-sm pt-1">
+                <div>
+                  <span className="font-semibold">Total Amount:</span>{' '}
+                  <span className="text-red-600 font-bold text-lg">₹{order.total_amount}</span>
+                </div>
+                <div className="flex items-center gap-1.5">
+                  <span className="text-gray-500 font-medium">Payment:</span>
+                  <span className={`px-2.5 py-0.5 rounded-full text-xs font-bold ${
+                    order.payment_status === 'completed'
+                      ? 'bg-green-100 text-green-800 border border-green-300'
+                      : order.payment_status === 'failed'
+                      ? 'bg-red-100 text-red-800 border border-red-300'
+                      : 'bg-yellow-100 text-yellow-800 border border-yellow-300'
+                  }`}>
+                    {order.payment_status === 'completed' ? '✓ PAID (Online)' : (order.payment_status || 'pending').toUpperCase()}
+                  </span>
+                </div>
               </div>
             </div>
 
