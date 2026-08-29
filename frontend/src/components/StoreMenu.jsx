@@ -2,6 +2,37 @@ import React, { useState, useEffect } from 'react';
 import { ChevronRight, Plus, Minus, ShoppingCart, X, Trash2, MapPin, FileText } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
+// Category-based emoji + gradient, used as a placeholder "image" for menu
+// items until real photos are uploaded. Add more keywords as your menu grows.
+const CATEGORY_STYLE = [
+  { keywords: ['bakery', 'bread', 'pastry', 'croissant'], emoji: '🥐', gradient: 'from-amber-400 to-orange-400' },
+  { keywords: ['cake', 'dessert', 'sweet'], emoji: '🍰', gradient: 'from-pink-400 to-rose-400' },
+  { keywords: ['beverage', 'drink', 'juice', 'coffee', 'tea'], emoji: '🥤', gradient: 'from-sky-400 to-blue-400' },
+  { keywords: ['snack', 'fries', 'chips'], emoji: '🍿', gradient: 'from-yellow-400 to-amber-400' },
+  { keywords: ['pizza'], emoji: '🍕', gradient: 'from-red-400 to-orange-400' },
+  { keywords: ['burger'], emoji: '🍔', gradient: 'from-orange-400 to-red-400' },
+  { keywords: ['main', 'meal', 'thali', 'rice', 'curry'], emoji: '🍛', gradient: 'from-red-400 to-orange-500' },
+  { keywords: ['breakfast', 'egg'], emoji: '🍳', gradient: 'from-yellow-400 to-orange-400' },
+  { keywords: ['dairy', 'milk', 'butter', 'cheese'], emoji: '🥛', gradient: 'from-blue-300 to-sky-400' },
+  { keywords: ['fruit'], emoji: '🍎', gradient: 'from-red-400 to-pink-400' },
+  { keywords: ['vegetable', 'produce'], emoji: '🥦', gradient: 'from-green-400 to-emerald-500' },
+  { keywords: ['book', 'notebook'], emoji: '📚', gradient: 'from-blue-500 to-indigo-500' },
+  { keywords: ['pen', 'pencil', 'stationery', 'supply', 'supplies'], emoji: '✏️', gradient: 'from-indigo-400 to-purple-500' }
+];
+
+const OUTLET_FALLBACK = {
+  food: { emoji: '🍽️', gradient: 'from-red-500 to-orange-500' },
+  grocery: { emoji: '🛒', gradient: 'from-green-500 to-emerald-500' },
+  stationary: { emoji: '📚', gradient: 'from-blue-500 to-indigo-500' }
+};
+
+const getItemStyle = (category, storeType) => {
+  const lower = (category || '').toLowerCase();
+  const match = CATEGORY_STYLE.find((c) => c.keywords.some((k) => lower.includes(k)));
+  if (match) return match;
+  return OUTLET_FALLBACK[storeType] || { emoji: '🛍️', gradient: 'from-gray-400 to-gray-500' };
+};
+
 export default function StoreMenu() {
   const { selectedStore, setCurrentView, cart, setCart, apiCall, setLoading, showNotification } = useApp();
   const [menuItems, setMenuItems] = useState([]);
@@ -175,12 +206,20 @@ export default function StoreMenu() {
             <div className="grid gap-4">
               {groupedMenu[category].map((item) => {
                 const qty = getItemQuantity(item.item_id);
+                const style = getItemStyle(item.category, selectedStore.type);
                 return (
                   <div
                     key={item.item_id}
-                    className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow p-5 flex justify-between items-center"
+                    className="bg-white rounded-xl shadow-sm hover:shadow-md transition-shadow p-5 flex items-center gap-4"
                   >
-                    <div className="flex-1">
+                    {/* Placeholder thumbnail — swap for a real <img> once photos are ready */}
+                    <div
+                      className={`hidden sm:flex w-20 h-20 shrink-0 rounded-xl bg-gradient-to-br ${style.gradient} items-center justify-center text-4xl shadow-inner`}
+                    >
+                      {style.emoji}
+                    </div>
+
+                    <div className="flex-1 min-w-0">
                       <h3 className="font-bold text-lg text-gray-900 mb-1">{item.item_name}</h3>
                       {item.description && (
                         <p className="text-sm text-gray-600 mb-2">{item.description}</p>
