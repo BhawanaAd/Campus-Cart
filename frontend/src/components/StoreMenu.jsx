@@ -1,11 +1,14 @@
 import React, { useState, useEffect } from 'react';
-import { ChevronRight, Plus, Minus, ShoppingCart, X, Trash2 } from 'lucide-react';
+import { ChevronRight, Plus, Minus, ShoppingCart, X, Trash2, MapPin, FileText } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
 export default function StoreMenu() {
   const { selectedStore, setCurrentView, cart, setCart, apiCall, setLoading, showNotification } = useApp();
   const [menuItems, setMenuItems] = useState([]);
   const [cartOpen, setCartOpen] = useState(false);
+  const [checkoutOpen, setCheckoutOpen] = useState(false);
+  const [deliveryLocation, setDeliveryLocation] = useState('');
+  const [specialInstructions, setSpecialInstructions] = useState('');
 
   useEffect(() => {
     if (selectedStore) {
@@ -78,7 +81,8 @@ export default function StoreMenu() {
   const cartTotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const cartCount = cart.reduce((sum, item) => sum + item.quantity, 0);
 
-  const handleCheckout = async () => {
+  // Opens the styled checkout modal instead of firing prompt() popups
+  const openCheckout = () => {
     if (!storeIsOpen) {
       showNotification('Cannot place order: store is currently closed', 'warning');
       return;
@@ -87,14 +91,16 @@ export default function StoreMenu() {
       showNotification('Your cart is empty!', 'warning');
       return;
     }
+    setDeliveryLocation('Campus Hostel');
+    setSpecialInstructions('');
+    setCheckoutOpen(true);
+  };
 
-    const deliveryLocation = prompt('Enter your delivery location (e.g., Hostel Block A, Room 101):', 'Campus Hostel');
-    if (!deliveryLocation) {
+  const handleCheckout = async () => {
+    if (!deliveryLocation.trim()) {
       showNotification('Delivery location is required', 'warning');
       return;
     }
-
-    const specialInstructions = prompt('Any special instructions? (Optional):', '');
 
     setLoading(true);
     try {
@@ -104,8 +110,8 @@ export default function StoreMenu() {
           item_id: item.item_id,
           quantity: item.quantity
         })),
-        delivery_location: deliveryLocation,
-        special_instructions: specialInstructions || '',
+        delivery_location: deliveryLocation.trim(),
+        special_instructions: specialInstructions.trim(),
         payment_method: 'cash'
       };
 
@@ -115,6 +121,7 @@ export default function StoreMenu() {
       });
 
       setCart([]);
+      setCheckoutOpen(false);
       setCartOpen(false);
       showNotification(`Order placed successfully! Order #${data.order_id}`, 'success');
 
@@ -285,13 +292,83 @@ export default function StoreMenu() {
                   <span className="font-bold text-2xl text-red-600">₹{cartTotal}</span>
                 </div>
                 <button
-                  onClick={handleCheckout}
+                  onClick={openCheckout}
                   className="w-full bg-gradient-to-r from-red-600 to-orange-600 text-white py-4 rounded-xl font-bold text-lg hover:from-red-700 hover:to-orange-700 transition-all shadow-lg hover:shadow-xl"
                 >
                   Place Order
                 </button>
               </div>
             )}
+          </div>
+        </>
+      )}
+
+      {/* Checkout Modal - replaces native prompt() popups */}
+      {checkoutOpen && (
+        <>
+          <div className="fixed inset-0 bg-black bg-opacity-50 z-[60]" onClick={() => setCheckoutOpen(false)}></div>
+          <div className="fixed inset-x-4 top-1/2 -translate-y-1/2 sm:inset-x-auto sm:left-1/2 sm:-translate-x-1/2 w-auto sm:w-full sm:max-w-md bg-white rounded-2xl shadow-2xl z-[70] flex flex-col max-h-[90vh]">
+            <div className="flex justify-between items-center p-6 border-b bg-gradient-to-r from-red-600 to-orange-600 text-white rounded-t-2xl">
+              <h2 className="text-xl font-bold">Delivery Details</h2>
+              <button onClick={() => setCheckoutOpen(false)} className="text-white hover:bg-white hover:bg-opacity-20 p-2 rounded-full transition-colors">
+                <X size={22} />
+              </button>
+            </div>
+
+            <div className="p-6 overflow-y-auto space-y-5">
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                  Delivery Location <span className="text-red-600">*</span>
+                </label>
+                <div className="relative">
+                  <MapPin size={18} className="absolute left-3 top-3.5 text-gray-400" />
+                  <input
+                    type="text"
+                    value={deliveryLocation}
+                    onChange={(e) => setDeliveryLocation(e.target.value)}
+                    placeholder="e.g., Hostel Block A, Room 101"
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all"
+                    autoFocus
+                  />
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-semibold text-gray-700 mb-1.5">
+                  Special Instructions <span className="text-gray-400 font-normal">(Optional)</span>
+                </label>
+                <div className="relative">
+                  <FileText size={18} className="absolute left-3 top-3.5 text-gray-400" />
+                  <textarea
+                    value={specialInstructions}
+                    onChange={(e) => setSpecialInstructions(e.target.value)}
+                    placeholder="e.g., Leave at the door, call on arrival..."
+                    rows={3}
+                    className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all resize-none"
+                  />
+                </div>
+              </div>
+
+              <div className="flex justify-between items-center pt-4 pb-1 text-lg border-t">
+                <span className="font-semibold">Total:</span>
+                <span className="font-bold text-2xl text-red-600">₹{cartTotal}</span>
+              </div>
+            </div>
+
+            <div className="p-6 pt-0 flex gap-3">
+              <button
+                onClick={() => setCheckoutOpen(false)}
+                className="flex-1 py-3 rounded-xl font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleCheckout}
+                className="flex-1 bg-gradient-to-r from-red-600 to-orange-600 text-white py-3 rounded-xl font-bold hover:from-red-700 hover:to-orange-700 transition-all shadow-lg"
+              >
+                Confirm Order
+              </button>
+            </div>
           </div>
         </>
       )}
