@@ -34,8 +34,8 @@ const getItemStyle = (category, storeType) => {
 };
 
 export default function StoreMenu() {
-<<<<<<< HEAD
   const {
+    currentUser,
     selectedStore,
     setCurrentView,
     cart,
@@ -46,9 +46,6 @@ export default function StoreMenu() {
     cartOpen,
     setCartOpen
   } = useApp();
-=======
-  const { currentUser, selectedStore, setCurrentView, cart, setCart, apiCall, setLoading, showNotification } = useApp();
->>>>>>> f617da2d335e3a5d92d27bafbea40352278d6db1
   const [menuItems, setMenuItems] = useState([]);
   const [checkoutOpen, setCheckoutOpen] = useState(false);
   const [deliveryLocation, setDeliveryLocation] = useState('');
