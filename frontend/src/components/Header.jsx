@@ -29,13 +29,13 @@ export default function Header() {
           <div className="flex items-center gap-4">
             {currentUser.user_type === 'student' && (
               <>
-                <button
-                  onClick={() => setCurrentView('my-orders')}
-                  className="hidden md:flex items-center gap-2 px-4 py-2 text-gray-700 hover:bg-gray-100 rounded transition-colors"
-                >
-                  <FileText size={18} />
-                  My Orders
-                </button>
+               <button
+                onClick={() => setCurrentView('my-orders')}
+                className="flex items-center gap-2 px-3 py-2 text-gray-700 hover:bg-gray-100 rounded transition-colors"
+               >
+                <FileText size={18} />
+                <span className="hidden md:inline">My Orders</span>
+               </button>
                 {cartCount > 0 && (
                   <div className="relative">
                     <ShoppingCart size={24} className="text-gray-700" />

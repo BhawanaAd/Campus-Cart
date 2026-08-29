@@ -11,7 +11,6 @@ export const useApp = () => {
 };
 
 export const AppProvider = ({ children }) => {
-  // Use sessionStorage so each browser tab can have an independent session
   const [authToken, setAuthToken] = useState(sessionStorage.getItem('authToken'));
   const [currentUser, setCurrentUser] = useState(
     sessionStorage.getItem('currentUser') ? JSON.parse(sessionStorage.getItem('currentUser')) : null
@@ -24,21 +23,36 @@ export const AppProvider = ({ children }) => {
       return [];
     }
   });
-  const [currentView, setCurrentView] = useState('login');
+
+  const [currentView, setCurrentViewState] = useState('login');
   const [selectedOutlet, setSelectedOutlet] = useState(null);
   const [selectedStore, setSelectedStore] = useState(null);
   const [loading, setLoading] = useState(false);
   const [notification, setNotification] = useState(null);
+  const setCurrentView = (view) => {
+    setCurrentViewState(view);
+    window.history.pushState({ view }, '', window.location.pathname);
+  };
 
-  // Load user and cart from localStorage on mount
+  useEffect(() => {
+    window.history.replaceState({ view: currentView }, '', window.location.pathname);
+
+    const handlePopState = (event) => {
+      if (event.state && event.state.view) {
+        setCurrentViewState(event.state.view);
+      }
+    };
+
+    window.addEventListener('popstate', handlePopState);
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
   useEffect(() => {
     if (authToken && currentUser) {
       setCurrentView(currentUser.user_type === 'student' ? 'outlets' : 'vendor-dashboard');
     }
-  }, [authToken, currentUser]);
 
-  // Save cart to localStorage whenever it changes
-  // Persist cart to sessionStorage (per-tab)
+  }, [authToken, currentUser]);
   useEffect(() => {
     try {
       sessionStorage.setItem('cart', JSON.stringify(cart));
@@ -90,12 +104,12 @@ export const AppProvider = ({ children }) => {
       
       setAuthToken(data.token);
       setCurrentUser(data.user);
-      // Store token and user in sessionStorage so each tab can be independent
+
       sessionStorage.setItem('authToken', data.token);
       sessionStorage.setItem('currentUser', JSON.stringify(data.user));
       
       showNotification(`Welcome ${data.user.full_name}!`, 'success');
-      // Route users to appropriate view based on role
+  
       if (data.user.user_type === 'student') {
         setCurrentView('outlets');
       } else if (data.user.user_type === 'vendor') {

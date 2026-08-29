@@ -21,31 +21,7 @@ export default function Login() {
   const [location, setLocation] = useState('');
   const [description, setDescription] = useState('');
 
-  // Pre-configured Vendor Credentials list from team
-  const vendorCredentials = [
-    { name: 'Spicy Hut', email: 'spicyhut@gmail.com', type: 'food' },
-    { name: 'Dev D Restro', email: 'devdrestro@gmail.com', type: 'food' },
-    { name: 'Campus Cafe', email: 'campuscafe@gmail.com', type: 'food' },
-    { name: 'Nescafe', email: 'nescafe@gmail.com', type: 'food' },
-    { name: 'Let Me Bake', email: 'letmebake@gmail.com', type: 'food' },
-    { name: 'Daily Essentials', email: 'dailyessentials@gmail.com', type: 'grocery' },
-    { name: 'Fresh Mart', email: 'freshmart@gmail.com', type: 'grocery' },
-    { name: 'Campus Books', email: 'campusbooks@gmail.com', type: 'stationary' },
-    { name: 'Study Corner', email: 'studycorner@gmail.com', type: 'stationary' },
-  ];
-
-  const handleQuickFillVendor = (vendorEmail) => {
-    setEmail(vendorEmail);
-    setPassword('password123');
-    setUserType('vendor');
-  };
-
-  const handleQuickFillStudent = () => {
-    setEmail('student@gmail.com');
-    setPassword('password123');
-    setUserType('student');
-  };
-
+ 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setIsLoading(true);
@@ -150,45 +126,6 @@ export default function Login() {
             <span>🏪</span> Vendor
           </button>
         </div>
-
-        {/* Sign In Quick Fill Credentials */}
-        {!isSignUp && (
-          <div className="mb-6 p-3 bg-gray-50 rounded-xl border border-gray-200">
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-xs font-bold text-gray-600 uppercase tracking-wider">⚡ Demo Quick Login</span>
-              {userType === 'student' ? (
-                <button
-                  type="button"
-                  onClick={handleQuickFillStudent}
-                  className="text-xs bg-red-100 text-red-700 hover:bg-red-200 font-semibold px-2.5 py-1 rounded-md transition-colors"
-                >
-                  Fill Student Demo
-                </button>
-              ) : null}
-            </div>
-
-            {userType === 'vendor' && (
-              <div className="space-y-1.5">
-                <label className="block text-xs font-semibold text-gray-500">Select Vendor Account:</label>
-                <select
-                  onChange={(e) => e.target.value && handleQuickFillVendor(e.target.value)}
-                  defaultValue=""
-                  className="w-full text-xs py-2 px-3 border border-gray-300 rounded-lg bg-white font-medium text-gray-800 focus:outline-none focus:ring-2 focus:ring-red-500"
-                >
-                  <option value="" disabled>Choose Vendor Credential...</option>
-                  {vendorCredentials.map((v) => (
-                    <option key={v.email} value={v.email}>
-                      {v.name} ({v.email}) - {v.type.toUpperCase()}
-                    </option>
-                  ))}
-                </select>
-                <p className="text-[11px] text-gray-500 italic mt-1 text-center">
-                  Password for all vendor accounts: <code className="bg-gray-200 px-1 py-0.5 rounded font-mono font-bold text-red-700">password123</code>
-                </p>
-              </div>
-            )}
-          </div>
-        )}
 
         {/* Main Form */}
         <form onSubmit={handleSubmit} className="space-y-4">

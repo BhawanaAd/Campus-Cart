@@ -1,9 +1,30 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Store, Package, BookOpen, ChevronRight } from 'lucide-react';
 import { useApp } from '../context/AppContext';
 
 export default function OutletsView() {
-  const { setCurrentView, setSelectedOutlet } = useApp();
+  const { setCurrentView, setSelectedOutlet, apiCall } = useApp();
+  const [counts, setCounts] = useState({ food: 0, grocery: 0, stationary: 0 });
+
+  useEffect(() => {
+    const fetchCounts = async () => {
+      const ids = ['food', 'grocery', 'stationary'];
+      const results = await Promise.all(
+        ids.map(async (id) => {
+          try {
+            const data = await apiCall(`/restaurants/outlet/${id}`);
+            return [id, (data.restaurants || []).length];
+          } catch (error) {
+            console.error(`Failed to load count for ${id}`, error);
+            return [id, 0];
+          }
+        })
+      );
+      setCounts(Object.fromEntries(results));
+    };
+
+    fetchCounts();
+  }, []);
 
   const outlets = [
     {
@@ -11,7 +32,7 @@ export default function OutletsView() {
       name: 'Food',
       icon: Store,
       color: 'from-red-500 to-orange-500',
-      storeCount: 5,
+      storeCount: counts.food,
       description: 'Restaurants & Cafes',
       emoji: '🍽️'
     },
@@ -20,7 +41,7 @@ export default function OutletsView() {
       name: 'Grocery',
       icon: Package,
       color: 'from-green-500 to-emerald-500',
-      storeCount: 2,
+      storeCount: counts.grocery,
       description: 'Daily Essentials',
       emoji: '🛒'
     },
@@ -29,7 +50,7 @@ export default function OutletsView() {
       name: 'Stationary',
       icon: BookOpen,
       color: 'from-blue-500 to-indigo-500',
-      storeCount: 2,
+      storeCount: counts.stationary,
       description: 'Study Materials',
       emoji: '📚'
     }
@@ -59,20 +80,19 @@ export default function OutletsView() {
               className="group relative bg-white rounded-2xl shadow-lg hover:shadow-2xl transition-all duration-300 overflow-hidden transform hover:-translate-y-2"
             >
               <div className={`absolute inset-0 bg-gradient-to-br ${outlet.color} opacity-10 group-hover:opacity-20 transition-opacity`}></div>
-              
+
               <div className="relative p-8">
                 <div className="text-6xl mb-4 text-center">{outlet.emoji}</div>
-                
+
                 <div className={`w-20 h-20 mx-auto mb-6 rounded-full bg-gradient-to-br ${outlet.color} flex items-center justify-center text-white shadow-lg`}>
                   <Icon size={40} />
                 </div>
-                
+
                 <h3 className="text-3xl font-bold text-center mb-2">{outlet.name}</h3>
                 <p className="text-center text-gray-600 mb-4">{outlet.description}</p>
                 <p className="text-center text-sm text-gray-500 mb-6">
                   {outlet.storeCount} stores available
                 </p>
-                
                 <div className="flex items-center justify-center text-red-600 font-semibold">
                   Browse Now
                   <ChevronRight size={20} className="ml-1 group-hover:translate-x-1 transition-transform" />
@@ -82,7 +102,6 @@ export default function OutletsView() {
           );
         })}
       </div>
-
       <div className="mt-16 text-center">
         <div className="inline-block bg-gradient-to-r from-red-50 to-orange-50 rounded-2xl p-8 shadow-md">
           <h3 className="text-2xl font-bold mb-4">🎉 Welcome to CampusCart!</h3>
